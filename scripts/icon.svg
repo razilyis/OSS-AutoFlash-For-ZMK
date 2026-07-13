@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2b2f77"/>
+      <stop offset="1" stop-color="#171a3d"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="1024" height="1024" rx="220" fill="url(#bg)"/>
+
+  <!-- chip body -->
+  <rect x="292" y="292" width="440" height="440" rx="36" fill="#e7e9f5"/>
+  <rect x="352" y="352" width="320" height="320" rx="18" fill="#171a3d"/>
+
+  <!-- chip pins -->
+  <g fill="#e7e9f5">
+    <rect x="220" y="380" width="60" height="28" rx="8"/>
+    <rect x="220" y="460" width="60" height="28" rx="8"/>
+    <rect x="220" y="540" width="60" height="28" rx="8"/>
+    <rect x="220" y="620" width="60" height="28" rx="8"/>
+
+    <rect x="744" y="380" width="60" height="28" rx="8"/>
+    <rect x="744" y="460" width="60" height="28" rx="8"/>
+    <rect x="744" y="540" width="60" height="28" rx="8"/>
+    <rect x="744" y="620" width="60" height="28" rx="8"/>
+
+    <rect x="380" y="220" width="28" height="60" rx="8"/>
+    <rect x="460" y="220" width="28" height="60" rx="8"/>
+    <rect x="540" y="220" width="28" height="60" rx="8"/>
+    <rect x="620" y="220" width="28" height="60" rx="8"/>
+
+    <rect x="380" y="744" width="28" height="60" rx="8"/>
+    <rect x="460" y="744" width="28" height="60" rx="8"/>
+    <rect x="540" y="744" width="28" height="60" rx="8"/>
+    <rect x="620" y="744" width="28" height="60" rx="8"/>
+  </g>
+
+  <!-- flash bolt -->
+  <path d="M 566 372 L 452 566 L 520 566 L 470 662 L 600 468 L 528 468 Z"
+        fill="#ffcf3a" stroke="#171a3d" stroke-width="10" stroke-linejoin="round"/>
+</svg>
