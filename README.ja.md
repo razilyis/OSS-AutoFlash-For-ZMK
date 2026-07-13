@@ -54,11 +54,17 @@ open "dist/AutoFlash for ZMK.app"
 ZMKのファームウェアビルドは、GitHub Actionsのワークフロー実行ごとに`.uf2`をArtifactとして生成する運用が一般的です(GitHub Releaseのタグ付けは前提にしていません)。
 
 1. アプリのメニューバーアイコン → 設定 → **GitHub Firmware** タブを開く
-2. 対象リポジトリの [Fine-grained personal access token](https://github.com/settings/personal-access-tokens) を発行する
-   - Repository access: 対象リポジトリのみ
-   - Permissions: **Actions: Read-only**, **Contents: Read-only**
+2. Fine-grained personal access tokenを発行する:
+   1. [github.com/settings/personal-access-tokens](https://github.com/settings/personal-access-tokens) (GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens) を開き、**Generate new token** をクリック
+   2. **Token name**: 分かりやすい名前(例: `AutoFlash for ZMK`)
+   3. **Expiration(有効期限)**: 任意。短くすると安全ですが、期限切れのたびに再発行してAutoFlashに貼り直す必要があります。好みで選んでください
+   4. **Resource owner**: 自分のアカウント(対象リポジトリが組織(Organization)所有の場合はその組織)
+   5. **Repository access**: **Only select repositories** を選び、AutoFlashに登録するリポジトリだけを選択する(不要なリポジトリへのアクセスは与えない)
+   6. **Permissions → Repository permissions**: **Actions** を **Read-only**、**Contents** を **Read-only** に設定。それ以外は **No access** のままにする
+   7. **Generate token** をクリックし、**表示された直後にコピーする**(`github_pat_…` で始まるトークンはこの時しか全文表示されません)
+   8. 組織所有のリポジトリでFine-grainedトークンに制限がかかっている場合、組織の管理者による承認が必要になることがあります
 3. 発行したTokenを「GitHub Personal Access Token」欄に貼り付ける(リポジトリごとに個別Tokenで上書きも可能)
-4. 「GitHub Repositories」でリポジトリURL・Workflowファイル名(例: `build.yml`)・既定ブランチを登録する
+4. 「GitHub Repositories」で、**Fetch from GitHub…** ボタンからTokenがアクセスできるリポジトリ一覧を選んで登録するか(登録済みのものには印が付きます)、リポジトリURL・Workflowファイル名(例: `build.yml`)・既定ブランチを手動で登録する
 
 以降は `⌥⌘U` → リポジトリ → ブランチ → UF2 → 書き込み先ボリューム、の順にキーボードだけで選択して書き込めます。書き込み成功後もパネルは閉じないので、左右分割のもう片側を続けて書き込めます。
 

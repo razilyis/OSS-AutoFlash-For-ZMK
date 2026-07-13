@@ -54,11 +54,17 @@ open "dist/AutoFlash for ZMK.app"
 ZMK firmware builds are commonly produced as a GitHub Actions artifact on every workflow run (this app does not rely on tagged GitHub Releases).
 
 1. Open the menu bar icon → Settings → **GitHub Firmware** tab
-2. Create a [fine-grained personal access token](https://github.com/settings/personal-access-tokens)
-   - Repository access: the target repository only
-   - Permissions: **Actions: Read-only**, **Contents: Read-only**
-3. Paste the token into the "GitHub Personal Access Token" field (a per-repository override token can also be set)
-4. Under "GitHub Repositories", register the repository URL, workflow filename (e.g. `build.yml`), and default branch
+2. Create a fine-grained personal access token:
+   1. Go to [github.com/settings/personal-access-tokens](https://github.com/settings/personal-access-tokens) (GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens) and click **Generate new token**
+   2. **Token name**: anything memorable, e.g. `AutoFlash for ZMK`
+   3. **Expiration**: your choice. A short expiration is safer but means you'll need to regenerate and re-paste the token into AutoFlash when it lapses; pick whatever tradeoff you're comfortable with
+   4. **Resource owner**: your account (or the organization that owns the repository, if applicable)
+   5. **Repository access**: choose **Only select repositories** and pick the repository (or repositories) you'll register in AutoFlash — avoid granting access to repos you don't need
+   6. **Permissions → Repository permissions**: set **Actions** to **Read-only** and **Contents** to **Read-only**. Leave everything else at **No access**
+   7. Click **Generate token**, then **copy it immediately** — GitHub only shows the full token (`github_pat_…`) once
+   8. If the repository belongs to an organization with fine-grained token restrictions, an org admin may need to approve the token before it starts working
+3. Paste the token into the "GitHub Personal Access Token" field in AutoFlash (a per-repository override token can also be set if you need different tokens for different repositories)
+4. Under "GitHub Repositories", either click **Fetch from GitHub…** to pick from the repositories your token can access (already-added ones are marked), or register the repository URL, workflow filename (e.g. `build.yml`), and default branch manually
 
 From then on, `⌥⌘U` walks you through repository → branch → UF2 → destination volume, entirely from the keyboard. After a successful flash the panel stays open so you can immediately flash the next half of a split keyboard.
 
