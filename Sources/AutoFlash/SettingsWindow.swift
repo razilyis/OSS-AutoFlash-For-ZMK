@@ -264,6 +264,7 @@ private struct FirmwareSettingsTab: View {
                     Text(" (Fine-grained token) with **Actions: Read-only** and **Contents: Read-only** permissions for the repositories below.")
                 SecureField("Paste your token here", text: $commonToken)
                     .textFieldStyle(.roundedBorder)
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.accentColor, lineWidth: 2))
                     .onChange(of: commonToken) { _, value in FirmwareTokenStore.commonToken = value }
                 Text(commonToken.isEmpty ? "No common token set" : "Common token saved in the macOS Keychain")
                     .font(.caption).foregroundStyle(commonToken.isEmpty ? .red : .secondary)

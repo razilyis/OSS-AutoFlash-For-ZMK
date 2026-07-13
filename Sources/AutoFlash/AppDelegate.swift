@@ -21,8 +21,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.settingsWindow.show(tab: .registeredFiles) { self?.registeredFlash.show() }
         }
 
+        setupMainMenu()
         setupStatusItem()
         registerHotKeys()
+    }
+
+    // This is an accessory (menu bar) app with no visible menu bar, so without a hidden
+    // main menu, ⌘C/⌘V/⌘X/⌘A/⌘Z don't reach text fields (no menu item routes them through
+    // the standard responder chain).
+    private func setupMainMenu() {
+        let mainMenu = NSMenu()
+
+        let editMenuItem = NSMenuItem()
+        mainMenu.addItem(editMenuItem)
+        let editMenu = NSMenu(title: "Edit")
+        editMenu.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
+        editMenu.addItem(withTitle: "Redo", action: Selector(("redo:")), keyEquivalent: "Z")
+        editMenu.addItem(.separator())
+        editMenu.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        editMenu.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        editMenu.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        editMenu.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        editMenuItem.submenu = editMenu
+
+        NSApp.mainMenu = mainMenu
     }
 
     private func setupStatusItem() {
