@@ -82,6 +82,7 @@ struct RegisteredFlashView: View {
     let onSelect: (URL, URL, Bool) -> Void
     let onClose: () -> Void
     let onSettings: () -> Void
+    let onSwitch: () -> Void
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -118,10 +119,11 @@ struct RegisteredFlashView: View {
             }
             Divider()
             HStack {
-                Button("Select") { select() }.keyboardShortcut(.return, modifiers: [])
-                Button("Refresh") { store.refresh() }.keyboardShortcut("r")
-                Button("Settings") { onSettings() }.keyboardShortcut("k")
+                Button("Select (↩)") { select() }.keyboardShortcut(.return, modifiers: [])
+                Button("Refresh (⌘R)") { store.refresh() }.keyboardShortcut("r")
+                Button("Settings (⌘K)") { onSettings() }.keyboardShortcut("k")
                 Spacer()
+                Text("Tab GitHub Firmware").foregroundStyle(.secondary)
                 Text("Esc Back/Close").foregroundStyle(.secondary)
                 Text(Settings.hotKey(for: .registeredFlash).label).foregroundStyle(.secondary)
             }.font(.caption).padding(10)
@@ -147,6 +149,7 @@ struct RegisteredFlashView: View {
             return .handled
         case "r" where press.modifiers.contains(.command): store.refresh(); return .handled
         case "k" where press.modifiers.contains(.command): onSettings(); return .handled
+        case .tab: onSwitch(); return .handled
         default: return .ignored
         }
     }
@@ -157,6 +160,7 @@ final class RegisteredFlashPanelController {
     private let panel: RegisteredFlashPanel
     private let store = RegisteredFlashStore()
     var onOpenSettings: (() -> Void)?
+    var onSwitchToGithub: (() -> Void)?
 
     init() {
         panel = RegisteredFlashPanel(contentRect: NSRect(x: 0, y: 0, width: 680, height: 440), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: true)
@@ -171,7 +175,8 @@ final class RegisteredFlashPanelController {
             store: store,
             onSelect: { [weak self] file, volume, dangerous in self?.confirmAndWrite(file: file, volume: volume, dangerous: dangerous) },
             onClose: { [weak self] in self?.hide() },
-            onSettings: { [weak self] in self?.hide(); self?.onOpenSettings?() }))
+            onSettings: { [weak self] in self?.hide(); self?.onOpenSettings?() },
+            onSwitch: { [weak self] in self?.onSwitchToGithub?() }))
     }
 
     func show() {

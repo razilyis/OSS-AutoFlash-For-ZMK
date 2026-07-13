@@ -135,6 +135,7 @@ struct FirmwareFlashView: View {
     let onSelect: (URL, URL, Bool) -> Void
     let onClose: () -> Void
     let onSettings: () -> Void
+    let onSwitch: () -> Void
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -172,10 +173,11 @@ struct FirmwareFlashView: View {
             }
             Divider()
             HStack {
-                Button("Select") { Task { await select() } }.keyboardShortcut(.return, modifiers: [])
-                Button("Refresh") { Task { await store.refresh() } }.keyboardShortcut("r")
-                Button("Settings") { onSettings() }.keyboardShortcut("k")
+                Button("Select (↩)") { Task { await select() } }.keyboardShortcut(.return, modifiers: [])
+                Button("Refresh (⌘R)") { Task { await store.refresh() } }.keyboardShortcut("r")
+                Button("Settings (⌘K)") { onSettings() }.keyboardShortcut("k")
                 Spacer()
+                Text("Tab Registered Files").foregroundStyle(.secondary)
                 Text("Esc Back/Close").foregroundStyle(.secondary)
                 Text(Settings.hotKey(for: .githubFlash).label).foregroundStyle(.secondary)
             }.font(.caption).padding(10)
@@ -210,6 +212,7 @@ struct FirmwareFlashView: View {
             return .handled
         case "r" where press.modifiers.contains(.command): Task { await store.refresh() }; return .handled
         case "k" where press.modifiers.contains(.command): onSettings(); return .handled
+        case .tab: onSwitch(); return .handled
         default: return .ignored
         }
     }
@@ -220,6 +223,7 @@ final class FirmwareFlashPanelController {
     private let panel: FirmwareFlashPanel
     private let store = FirmwareFlashStore()
     var onOpenSettings: (() -> Void)?
+    var onSwitchToRegistered: (() -> Void)?
 
     init() {
         panel = FirmwareFlashPanel(contentRect: NSRect(x: 0, y: 0, width: 680, height: 440), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: true)
@@ -234,7 +238,8 @@ final class FirmwareFlashPanelController {
             store: store,
             onSelect: { [weak self] file, volume, dangerous in self?.confirmAndWrite(file: file, volume: volume, dangerous: dangerous) },
             onClose: { [weak self] in self?.hide() },
-            onSettings: { [weak self] in self?.hide(); self?.onOpenSettings?() }))
+            onSettings: { [weak self] in self?.hide(); self?.onOpenSettings?() },
+            onSwitch: { [weak self] in self?.onSwitchToRegistered?() }))
     }
 
     func show() {

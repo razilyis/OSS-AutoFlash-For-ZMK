@@ -20,6 +20,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         registeredFlash.onOpenSettings = { [weak self] in
             self?.settingsWindow.show(tab: .registeredFiles) { self?.registeredFlash.show() }
         }
+        githubFlash.onSwitchToRegistered = { [weak self] in
+            self?.githubFlash.hide()
+            self?.registeredFlash.show()
+        }
+        registeredFlash.onSwitchToGithub = { [weak self] in
+            self?.registeredFlash.hide()
+            self?.githubFlash.show()
+        }
 
         setupMainMenu()
         setupStatusItem()
