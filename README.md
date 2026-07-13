@@ -1,6 +1,8 @@
 # AutoFlash for ZMK
 
-A lightweight macOS menu bar utility for flashing firmware to split keyboards running ZMK (UF2 bootloader devices). One hotkey, and your firmware is flashed.
+A lightweight macOS menu bar utility for flashing firmware to split keyboards running ZMK (UF2 bootloader devices).
+
+The core idea: flash firmware without ever touching the mouse. Press a hotkey, arrow through the list, hit Return — done. No Finder, no drag-and-drop, no clicking through a GUI.
 
 日本語版: [README.ja.md](README.ja.md)
 
