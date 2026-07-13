@@ -149,7 +149,7 @@ nonisolated enum GitHubFirmwareAPI {
         ]
         let runsData = try await request(components.url!, token: token)
         let runs = try JSONDecoder().decode(Runs.self, from: runsData)
-        guard let latest = runs.workflow_runs.first else { throw FirmwareAPIError.message("Workflow Runがありません") }
+        guard let latest = runs.workflow_runs.first else { throw FirmwareAPIError.message("No workflow runs found.") }
         let latestSucceeded = latest.status == "completed" && latest.conclusion == "success"
         let successful = runs.workflow_runs.first { $0.status == "completed" && $0.conclusion == "success" }
         if !latestSucceeded && !allowLatestSuccessfulFallback {
@@ -159,13 +159,13 @@ nonisolated enum GitHubFirmwareAPI {
                 hasSuccessfulFallback: successful != nil)
         }
         guard let run = latestSucceeded ? latest : successful else {
-            throw FirmwareAPIError.message("成功したWorkflow Runがありません")
+            throw FirmwareAPIError.message("No successful workflow run found.")
         }
         let artifactsURL = URL(string: "https://api.github.com/repos/\(owner)/\(repo)/actions/runs/\(run.id)/artifacts?per_page=100")!
         let artifactsData = try await request(artifactsURL, token: token)
         let artifactList = try JSONDecoder().decode(Artifacts.self, from: artifactsData)
             .artifacts.filter { !$0.expired }
-        guard !artifactList.isEmpty else { throw FirmwareAPIError.message("有効なArtifactがありません") }
+        guard !artifactList.isEmpty else { throw FirmwareAPIError.message("No valid artifacts found.") }
 
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("AutoFlashFirmware/\(repository.id.uuidString)/\(run.id)", isDirectory: true)
@@ -193,7 +193,7 @@ nonisolated enum GitHubFirmwareAPI {
             process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
             process.arguments = ["-x", "-k", zip.path, destination.path]
             try process.run(); process.waitUntilExit()
-            guard process.terminationStatus == 0 else { throw FirmwareAPIError.message("Artifactを展開できません") }
+            guard process.terminationStatus == 0 else { throw FirmwareAPIError.message("Failed to extract the artifact.") }
             let enumerator = FileManager.default.enumerator(
                 at: destination, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
             while let url = enumerator?.nextObject() as? URL {
@@ -204,7 +204,7 @@ nonisolated enum GitHubFirmwareAPI {
                     url: url, artifactName: artifact.name, relativePath: relative))
             }
         }
-        guard !files.isEmpty else { throw FirmwareAPIError.message("Artifact内にUF2がありません") }
+        guard !files.isEmpty else { throw FirmwareAPIError.message("No UF2 files found in the artifact.") }
         let sortedFiles = files.sorted {
             if $0.url.lastPathComponent != $1.url.lastPathComponent {
                 return $0.url.lastPathComponent.localizedStandardCompare($1.url.lastPathComponent) == .orderedAscending
@@ -218,7 +218,7 @@ nonisolated enum GitHubFirmwareAPI {
     }
 
     private static func coordinates(_ repository: FirmwareRepository) throws -> (String, String) {
-        guard let value = repository.ownerAndRepository else { throw FirmwareAPIError.message("GitHubリポジトリURLが不正です") }
+        guard let value = repository.ownerAndRepository else { throw FirmwareAPIError.message("Invalid GitHub repository URL.") }
         return value
     }
 
@@ -233,17 +233,17 @@ nonisolated enum GitHubFirmwareAPI {
             let code = (response as? HTTPURLResponse)?.statusCode ?? 0
             if code == 401 {
                 throw FirmwareAPIError.message(
-                    "GitHub認証が必要です。⌘Kで設定を開き、対象リポジトリのActions/ContentsをRead-onlyにしたFine-grained Tokenを登録してください。")
+                    "GitHub authentication required. Press ⌘K to open settings and add a fine-grained token with Actions/Contents Read-only access for this repository.")
             }
             if code == 403 {
                 throw FirmwareAPIError.message(
-                    "GitHub Tokenの権限またはAPI利用上限を確認してください (HTTP 403)。")
+                    "Check your GitHub token's permissions or API rate limit (HTTP 403).")
             }
             if code == 415 {
                 throw FirmwareAPIError.message(
-                    "GitHub Actions Artifactの取得形式が拒否されました (HTTP 415)。")
+                    "The GitHub Actions artifact request format was rejected (HTTP 415).")
             }
-            throw FirmwareAPIError.message("GitHub APIエラー (HTTP \(code))")
+            throw FirmwareAPIError.message("GitHub API error (HTTP \(code)).")
         }
         return data
     }
@@ -256,7 +256,7 @@ enum FirmwareAPIError: LocalizedError {
         switch self {
         case .message(let value): value
         case .latestRunNotSuccessful(let number, let state, _):
-            "最新のWorkflow Run #\(number)は\(state)です"
+            "The latest workflow run #\(number) is \(state)."
         }
     }
 }

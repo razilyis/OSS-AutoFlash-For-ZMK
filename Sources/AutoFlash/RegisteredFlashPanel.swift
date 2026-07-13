@@ -13,15 +13,15 @@ final class RegisteredFlashStore: ObservableObject {
 
     var title: String {
         switch stage {
-        case .files: "書き込むファームウェアを選択"
-        case .volumes: "書き込み先を選択"
+        case .files: "Select firmware to flash"
+        case .volumes: "Select a destination"
         }
     }
 
     var rows: [(title: String, subtitle: String, warning: Bool)] {
         switch stage {
         case .files: return firmwares.map {
-            ($0.name, $0.fileExists ? $0.filePath : "ファイルが見つかりません: \($0.filePath)", isDangerous($0.fileName))
+            ($0.name, $0.fileExists ? $0.filePath : "File not found: \($0.filePath)", isDangerous($0.fileName))
         }
         case .volumes: return volumes.map { ($0.lastPathComponent, $0.path, false) }
         }
@@ -41,12 +41,12 @@ final class RegisteredFlashStore: ObservableObject {
         case .files:
             let firmware = firmwares[selectedIndex]
             guard firmware.fileExists else {
-                errorMessage = "ファイルが見つかりません: \(firmware.filePath)"
+                errorMessage = "File not found: \(firmware.filePath)"
                 return nil
             }
             file = firmware
             volumes = Flasher.mountedUF2Volumes()
-            if volumes.isEmpty { errorMessage = "UF2ドライブを接続してから⌘Rで更新してください" }
+            if volumes.isEmpty { errorMessage = "Connect a UF2 drive, then press ⌘R to refresh." }
             else { stage = .volumes; selectedIndex = 0; errorMessage = nil }
         case .volumes:
             guard let file, let url = file.url else { return nil }
@@ -67,7 +67,7 @@ final class RegisteredFlashStore: ObservableObject {
         switch stage {
         case .files: firmwares = RegisteredFirmwareSettings.firmwares
         case .volumes:
-            volumes = Flasher.mountedUF2Volumes(); errorMessage = volumes.isEmpty ? "UF2ドライブが見つかりません" : nil
+            volumes = Flasher.mountedUF2Volumes(); errorMessage = volumes.isEmpty ? "No UF2 drive found." : nil
         }
     }
 
@@ -91,9 +91,9 @@ struct RegisteredFlashView: View {
                 Text(store.title).font(.title3)
                 Spacer()
                 Button { onSettings() } label: { Image(systemName: "gearshape") }
-                    .buttonStyle(.borderless).help("登録ファイルの設定を開く (⌘K)")
+                    .buttonStyle(.borderless).help("Open Registered Files settings (⌘K)")
                 Button { onClose() } label: { Image(systemName: "xmark") }
-                    .buttonStyle(.borderless).help("閉じる")
+                    .buttonStyle(.borderless).help("Close")
             }.padding(14)
             Divider()
             List(selection: Binding<Int?>(
@@ -118,11 +118,11 @@ struct RegisteredFlashView: View {
             }
             Divider()
             HStack {
-                Button("選択") { select() }.keyboardShortcut(.return, modifiers: [])
-                Button("更新") { store.refresh() }.keyboardShortcut("r")
-                Button("設定") { onSettings() }.keyboardShortcut("k")
+                Button("Select") { select() }.keyboardShortcut(.return, modifiers: [])
+                Button("Refresh") { store.refresh() }.keyboardShortcut("r")
+                Button("Settings") { onSettings() }.keyboardShortcut("k")
                 Spacer()
-                Text("Esc 戻る/閉じる").foregroundStyle(.secondary)
+                Text("Esc Back/Close").foregroundStyle(.secondary)
                 Text(Settings.hotKey(for: .registeredFlash).label).foregroundStyle(.secondary)
             }.font(.caption).padding(10)
         }
@@ -184,9 +184,9 @@ final class RegisteredFlashPanelController {
     private func confirmAndWrite(file: URL, volume: URL, dangerous: Bool) {
         let alert = NSAlert()
         alert.alertStyle = dangerous ? .critical : .warning
-        alert.messageText = dangerous ? "リセット用UF2を書き込みますか?" : "ファームウェアを書き込みますか?"
+        alert.messageText = dangerous ? "Flash the reset UF2?" : "Flash this firmware?"
         alert.informativeText = "\(file.lastPathComponent)\n→ \(volume.lastPathComponent)"
-        alert.addButton(withTitle: "書き込む"); alert.addButton(withTitle: "キャンセル")
+        alert.addButton(withTitle: "Flash"); alert.addButton(withTitle: "Cancel")
         guard alert.runModal() == .alertFirstButtonReturn else { return }
         do {
             try Flasher.write(fileAt: file, named: file.lastPathComponent, to: volume)
@@ -195,8 +195,8 @@ final class RegisteredFlashPanelController {
             store.errorMessage = nil
             store.selectedIndex = 0
             panel.makeKeyAndOrderFront(nil)
-            HUD.show("\(volume.lastPathComponent) へ書き込みました")
-        } catch { HUD.show("書き込みに失敗しました: \(error.localizedDescription)") }
+            HUD.show("Flashed to \(volume.lastPathComponent). You can select the next firmware.")
+        } catch { HUD.show("Flash failed: \(error.localizedDescription)") }
     }
 }
 

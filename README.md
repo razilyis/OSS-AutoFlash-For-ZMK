@@ -1,59 +1,65 @@
 # AutoFlash for ZMK
 
-自作分割キーボード(ZMKファームウェア、UF2ブートローダー機)向けの、macOS用ファームウェア書き込みユーティリティです。メニューバーに常駐し、ホットキー1つでファームウェアを書き込めます。
+A lightweight macOS menu bar utility for flashing firmware to split keyboards running ZMK (UF2 bootloader devices). One hotkey, and your firmware is flashed.
 
-機能はあえて2つだけに絞っています:
+日本語版: [README.ja.md](README.ja.md)
 
-1. **登録ファイルFlash** — 事前に登録したローカルの`.uf2`ファイルを、ホットキー(初期値 `⌥⌘F`)一発で書き込む
-2. **GitHub Firmware Flash** — 登録したGitHubリポジトリのGitHub Actions Artifactから最新の`.uf2`を自動ダウンロードして書き込む(初期値 `⌥⌘U`)
+The feature set is intentionally kept to just two things:
 
-詳しい仕様は [spec.md](spec.md) を参照してください。
+1. **Registered File Flash** — flash a `.uf2` file you've registered locally, with one hotkey (default `⌥⌘F`)
+2. **GitHub Firmware Flash** — automatically download the latest `.uf2` from a GitHub Actions artifact in a repository you've registered, then flash it (default `⌥⌘U`)
 
-## スクリーンショット
+See [spec.md](spec.md) for the full specification.
 
-(準備中)
+## Disclaimer
 
-## 動作環境
+This app writes directly to your keyboard's bootloader. **Use it entirely at your own risk.** The author(s) provide no warranty and accept no responsibility for any damage, malfunction, bricked hardware, data loss, or other issues that result from using this software. See the [LICENSE](LICENSE) for the full "AS IS" terms.
 
-- macOS 15.0以降
-- Swift 6 ツールチェーン(Xcode 16以降、または Swift 6 toolchain 単体)
+## Screenshots
 
-## ビルド方法
+(coming soon)
+
+## Requirements
+
+- macOS 15.0 or later
+- Swift 6 toolchain (Xcode 16+, or a standalone Swift 6 toolchain)
+
+## Build
 
 ```sh
-git clone <このリポジトリのURL>
+git clone <this repository's URL>
 cd OSS-AutoFlash-For-ZMK
 ./scripts/make_app.sh
 open "dist/AutoFlash for ZMK.app"
 ```
 
-`swift build` だけでも実行バイナリは作れますが、メニューバーアイコンやログイン項目登録を正しく機能させるには `.app` バンドル化(`make_app.sh`)が必要です。
+`swift build` alone produces a runnable binary, but packaging as a `.app` bundle (via `make_app.sh`) is required for the menu bar icon and login item registration to work correctly.
 
-## GitHub Firmware Flashの設定
+## Setting up GitHub Firmware Flash
 
-ZMKのファームウェアビルドは、GitHub Actionsのワークフロー実行ごとに`.uf2`をArtifactとして生成する運用が一般的です(GitHub Releaseのタグ付けは前提にしていません)。
+ZMK firmware builds are commonly produced as a GitHub Actions artifact on every workflow run (this app does not rely on tagged GitHub Releases).
 
-1. アプリのメニューバーアイコン → 設定 → GitHub Firmware タブを開く
-2. 対象リポジトリの [Fine-grained personal access token](https://github.com/settings/personal-access-tokens) を発行する
-   - Repository access: 対象リポジトリのみ
+1. Open the menu bar icon → Settings → **GitHub Firmware** tab
+2. Create a [fine-grained personal access token](https://github.com/settings/personal-access-tokens)
+   - Repository access: the target repository only
    - Permissions: **Actions: Read-only**, **Contents: Read-only**
-3. 発行したTokenを「共通GitHub Token」欄に貼り付ける(リポジトリごとに個別Tokenで上書きも可能)
-4. 「GitHub Repositories」でリポジトリURL・Workflowファイル名(例: `build.yml`)・既定ブランチを登録する
+3. Paste the token into the "GitHub Personal Access Token" field (a per-repository override token can also be set)
+4. Under "GitHub Repositories", register the repository URL, workflow filename (e.g. `build.yml`), and default branch
 
-以降は `⌥⌘U` → リポジトリ → ブランチ → UF2 → 書き込み先ボリューム、の順にキーボードだけで選択して書き込めます。
+From then on, `⌥⌘U` walks you through repository → branch → UF2 → destination volume, entirely from the keyboard. After a successful flash the panel stays open so you can immediately flash the next half of a split keyboard.
 
-## 登録ファイルFlashの設定
+## Setting up Registered File Flash
 
-1. 設定 → 登録ファイル タブを開く
-2. 「ファイルを追加…」でローカルの`.uf2`ファイルを選択し、表示名を付ける
-3. 左右分割キーボードの場合は左右それぞれを別項目として登録する
+1. Open Settings → **Registered Files** tab
+2. Click "Add File…" and pick a local `.uf2` file, then give it a name
+3. For split keyboards, register the left and right halves as separate entries
 
-以降は `⌥⌘F` → 登録ファイル → 書き込み先ボリューム、の順に選択して書き込めます。
+From then on, `⌥⌘F` walks you through the registered file → destination volume. Flashing is also continuous here — the panel returns to the file list after each successful write.
 
-## UF2ブートローダーについて
+## About UF2 bootloaders
 
-nRF52/RP2040系のUF2ブートローダーは、マウントされたボリューム直下に`INFO_UF2.TXT`というファイルを必ず持ちます。本アプリはこれを検出条件として使い、対象ファイルをそのボリュームへコピーすることで書き込みを行います(コピー = 書き込み)。書き込み完了と同時にデバイスが再起動してボリュームがアンマウントされます。
+nRF52/RP2040-based UF2 bootloaders always expose an `INFO_UF2.TXT` file at the root of the mounted volume. This app uses that file's presence to detect the bootloader drive, then flashes by simply copying the target file onto that volume. The device reboots and unmounts automatically once the copy completes.
 
-## ライセンス
+## License
 
 [MIT License](LICENSE)

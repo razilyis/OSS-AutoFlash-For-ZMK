@@ -42,7 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let registeredCombo = Settings.hotKey(for: .registeredFlash)
         let registeredItem = NSMenuItem(
-            title: "登録ファイルFlash", action: #selector(openRegisteredFlash), keyEquivalent: registeredCombo.keyChar)
+            title: "Registered File Flash", action: #selector(openRegisteredFlash), keyEquivalent: registeredCombo.keyChar)
         registeredItem.keyEquivalentModifierMask = registeredCombo.cocoaModifiers
         registeredItem.target = self
         registeredFlashMenuItem = registeredItem
@@ -51,12 +51,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(.separator())
 
         let settingsItem = NSMenuItem(
-            title: "設定…", action: #selector(openSettings), keyEquivalent: ",")
+            title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(settingsItem)
 
         let quitItem = NSMenuItem(
-            title: "AutoFlash for ZMK を終了", action: #selector(NSApplication.terminate(_:)),
+            title: "Quit AutoFlash for ZMK", action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q")
         menu.addItem(quitItem)
 

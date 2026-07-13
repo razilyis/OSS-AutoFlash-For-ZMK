@@ -10,7 +10,7 @@ enum HotKeyAction: String, CaseIterable {
     var title: String {
         switch self {
         case .githubFlash: return "GitHub Firmware Flash"
-        case .registeredFlash: return "登録ファイルFlash"
+        case .registeredFlash: return "Registered File Flash"
         }
     }
 

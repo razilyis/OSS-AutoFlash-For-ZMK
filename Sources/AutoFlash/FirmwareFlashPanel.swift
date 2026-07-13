@@ -23,20 +23,20 @@ final class FirmwareFlashStore: ObservableObject {
 
     var title: String {
         switch stage {
-        case .repositories: "リポジトリを選択"
-        case .branches: "ブランチを選択"
-        case .files: "書き込むUF2を選択"
-        case .volumes: "書き込み先を選択"
+        case .repositories: "Select a repository"
+        case .branches: "Select a branch"
+        case .files: "Select a UF2 to flash"
+        case .volumes: "Select a destination"
         }
     }
 
     var rows: [(title: String, subtitle: String, warning: Bool)] {
         switch stage {
         case .repositories: return repositories.map { ($0.name, $0.repositoryURL, false) }
-        case .branches: return branches.map { ($0, $0 == repository?.defaultBranch ? "既定ブランチ" : "", false) }
+        case .branches: return branches.map { ($0, $0 == repository?.defaultBranch ? "default branch" : "", false) }
         case .files: return files.map {
             ($0.url.lastPathComponent,
-             "\($0.artifactName) · \($0.relativePath) · commit \(commit)\(fromCache ? " · キャッシュ" : "")",
+             "\($0.artifactName) · \($0.relativePath) · commit \(commit)\(fromCache ? " · cached" : "")",
              isDangerous($0.url))
         }
         case .volumes: return volumes.map { ($0.lastPathComponent, $0.path, false) }
@@ -63,7 +63,7 @@ final class FirmwareFlashStore: ObservableObject {
         case .files:
             file = files[selectedIndex]
             volumes = Flasher.mountedUF2Volumes()
-            if volumes.isEmpty { errorMessage = "UF2ドライブを接続してから⌘Rで更新してください" }
+            if volumes.isEmpty { errorMessage = "Connect a UF2 drive, then press ⌘R to refresh." }
             else { stage = .volumes; selectedIndex = 0; errorMessage = nil }
         case .volumes:
             guard let file else { return nil }
@@ -88,7 +88,7 @@ final class FirmwareFlashStore: ObservableObject {
         case .branches: await loadBranches()
         case .files: await loadFiles()
         case .volumes:
-            volumes = Flasher.mountedUF2Volumes(); errorMessage = volumes.isEmpty ? "UF2ドライブが見つかりません" : nil
+            volumes = Flasher.mountedUF2Volumes(); errorMessage = volumes.isEmpty ? "No UF2 drive found." : nil
         }
     }
 
@@ -145,9 +145,9 @@ struct FirmwareFlashView: View {
                 Spacer()
                 if store.isLoading { ProgressView().controlSize(.small) }
                 Button { onSettings() } label: { Image(systemName: "gearshape") }
-                    .buttonStyle(.borderless).help("Firmware設定を開く (⌘K)")
+                    .buttonStyle(.borderless).help("Open Firmware settings (⌘K)")
                 Button { onClose() } label: { Image(systemName: "xmark") }
-                    .buttonStyle(.borderless).help("閉じる")
+                    .buttonStyle(.borderless).help("Close")
             }.padding(14)
             Divider()
             List(selection: Binding<Int?>(
@@ -172,25 +172,25 @@ struct FirmwareFlashView: View {
             }
             Divider()
             HStack {
-                Button("選択") { Task { await select() } }.keyboardShortcut(.return, modifiers: [])
-                Button("更新") { Task { await store.refresh() } }.keyboardShortcut("r")
-                Button("設定") { onSettings() }.keyboardShortcut("k")
+                Button("Select") { Task { await select() } }.keyboardShortcut(.return, modifiers: [])
+                Button("Refresh") { Task { await store.refresh() } }.keyboardShortcut("r")
+                Button("Settings") { onSettings() }.keyboardShortcut("k")
                 Spacer()
-                Text("Esc 戻る/閉じる").foregroundStyle(.secondary)
+                Text("Esc Back/Close").foregroundStyle(.secondary)
                 Text(Settings.hotKey(for: .githubFlash).label).foregroundStyle(.secondary)
             }.font(.caption).padding(10)
         }
         .frame(width: 680, height: 440)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
         .onAppear { focused = true }
-        .alert("最新Workflowを使用できません", isPresented: $store.showRunWarning) {
+        .alert("Can't use the latest workflow run", isPresented: $store.showRunWarning) {
             if store.hasSuccessfulFallback {
-                Button("最新の成功Runを使う") { Task { await store.loadFiles(allowFallback: true) } }
+                Button("Use latest successful run") { Task { await store.loadFiles(allowFallback: true) } }
             }
-            Button("取り消す", role: .cancel) {}
+            Button("Cancel", role: .cancel) {}
         } message: {
             Text(store.runWarningMessage + (store.hasSuccessfulFallback
-                ? "\n最新の成功済みRunからUF2を取得できます。" : "\n使用できる成功済みRunもありません。"))
+                ? "\nYou can fetch the UF2 from the latest successful run instead." : "\nNo successful run is available either."))
         }
     }
 
@@ -247,9 +247,9 @@ final class FirmwareFlashPanelController {
     private func confirmAndWrite(file: URL, volume: URL, dangerous: Bool) {
         let alert = NSAlert()
         alert.alertStyle = dangerous ? .critical : .warning
-        alert.messageText = dangerous ? "リセット用UF2を書き込みますか?" : "ファームウェアを書き込みますか?"
+        alert.messageText = dangerous ? "Flash the reset UF2?" : "Flash this firmware?"
         alert.informativeText = "\(file.lastPathComponent)\n→ \(volume.lastPathComponent)"
-        alert.addButton(withTitle: "書き込む"); alert.addButton(withTitle: "キャンセル")
+        alert.addButton(withTitle: "Flash"); alert.addButton(withTitle: "Cancel")
         guard alert.runModal() == .alertFirstButtonReturn else { return }
         do {
             try Flasher.write(fileAt: file, named: file.lastPathComponent, to: volume)
@@ -259,8 +259,8 @@ final class FirmwareFlashPanelController {
             store.errorMessage = nil
             store.selectedIndex = 0
             panel.makeKeyAndOrderFront(nil)
-            HUD.show("\(volume.lastPathComponent) へ書き込みました。次のUF2を選択できます")
-        } catch { HUD.show("書き込みに失敗しました: \(error.localizedDescription)") }
+            HUD.show("Flashed to \(volume.lastPathComponent). You can select the next UF2.")
+        } catch { HUD.show("Flash failed: \(error.localizedDescription)") }
     }
 }
 

@@ -22,7 +22,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
                 backing: .buffered,
                 defer: false
             )
-            window.title = "AutoFlash for ZMK 設定"
+            window.title = "AutoFlash for ZMK Settings"
             window.isReleasedWhenClosed = false
             window.delegate = self
             window.center()
@@ -69,23 +69,23 @@ private struct SettingsView: View {
     var body: some View {
         TabView(selection: $selectedTab) {
             GeneralTab()
-                .tabItem { Label("一般", systemImage: "gearshape") }
+                .tabItem { Label("General", systemImage: "gearshape") }
                 .tag(SettingsTab.general)
             HotKeysTab()
-                .tabItem { Label("ホットキー", systemImage: "keyboard") }
+                .tabItem { Label("Hotkeys", systemImage: "keyboard") }
                 .tag(SettingsTab.hotKeys)
             FirmwareSettingsTab()
                 .tabItem { Label("GitHub Firmware", systemImage: "memorychip") }
                 .tag(SettingsTab.firmware)
             RegisteredFilesTab()
-                .tabItem { Label("登録ファイル", systemImage: "doc") }
+                .tabItem { Label("Registered Files", systemImage: "doc") }
                 .tag(SettingsTab.registeredFiles)
         }
         .frame(width: 640, height: 480)
     }
 }
 
-// MARK: - 一般タブ
+// MARK: - General tab
 
 private struct GeneralTab: View {
     @State private var loginItemEnabled = LoginItem.isEnabled
@@ -93,8 +93,8 @@ private struct GeneralTab: View {
 
     var body: some View {
         Form {
-            Section("起動") {
-                Toggle("ログイン時に自動起動", isOn: $loginItemEnabled)
+            Section("Startup") {
+                Toggle("Launch at login", isOn: $loginItemEnabled)
                     .onChange(of: loginItemEnabled) { _, value in
                         do {
                             try LoginItem.setEnabled(value)
@@ -107,7 +107,7 @@ private struct GeneralTab: View {
                 if let errorMessage {
                     Text(errorMessage).font(.caption).foregroundStyle(.red)
                 }
-                Text("ビルド済み.appから起動している場合のみ登録できます(swift run の裸バイナリでは失敗します)。")
+                Text("Only works when launched from a built .app (fails when run via `swift run`).")
                     .font(.caption).foregroundStyle(.secondary)
             }
         }
@@ -115,16 +115,16 @@ private struct GeneralTab: View {
     }
 }
 
-// MARK: - ホットキータブ
+// MARK: - Hotkeys tab
 
 private struct HotKeysTab: View {
     var body: some View {
         Form {
-            Section("ホットキー") {
+            Section("Hotkeys") {
                 ForEach(HotKeyAction.allCases, id: \.rawValue) { action in
                     HotKeyRecorderRow(action: action)
                 }
-                Text("クリックして新しいキーの組み合わせ(⌘ / ⌥ / ⌃ を含む)を押してください。Esc でキャンセル。")
+                Text("Click, then press a new combination that includes ⌘ / ⌥ / ⌃. Press Esc to cancel.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -148,7 +148,7 @@ private struct HotKeyRecorderRow: View {
             Button {
                 recording ? cancelRecording() : startRecording()
             } label: {
-                Text(recording ? "キーを押してください…" : (combo ?? action.defaultCombo).label)
+                Text(recording ? "Press a key…" : (combo ?? action.defaultCombo).label)
                     .frame(minWidth: 120)
             }
             .tint(recording ? .accentColor : nil)
@@ -159,7 +159,7 @@ private struct HotKeyRecorderRow: View {
                 Image(systemName: "arrow.uturn.backward")
             }
             .buttonStyle(.borderless)
-            .help("デフォルト(\(action.defaultCombo.label))に戻す")
+            .help("Reset to default (\(action.defaultCombo.label))")
         }
         .onAppear { combo = Settings.hotKey(for: action) }
         .onDisappear { cancelRecording() }
@@ -193,7 +193,7 @@ private struct HotKeyRecorderRow: View {
                 || newCombo.cocoaModifiers.contains(.option)
                 || newCombo.cocoaModifiers.contains(.control)
         else {
-            errorMessage = "⌘ / ⌥ / ⌃ のいずれかを含む組み合わせにしてください"
+            errorMessage = "Combination must include ⌘, ⌥, or ⌃."
             return
         }
 
@@ -209,7 +209,7 @@ private struct HotKeyRecorderRow: View {
             combo = newCombo
             errorMessage = nil
         } else {
-            errorMessage = "この組み合わせは登録できませんでした(他のホットキーやアプリと競合しています)"
+            errorMessage = "Couldn't register this combination (it conflicts with another hotkey or app)."
         }
         HotKeyCenter.shared.resumeAll()
     }
@@ -234,7 +234,7 @@ private struct HotKeyRecorderRow: View {
             combo = defaultCombo
             errorMessage = nil
         } else {
-            errorMessage = "デフォルトに戻せませんでした(他のホットキーと競合しています)"
+            errorMessage = "Couldn't reset to default (conflicts with another hotkey)."
         }
     }
 
@@ -246,7 +246,7 @@ private struct HotKeyRecorderRow: View {
     }
 }
 
-// MARK: - GitHub Firmwareタブ
+// MARK: - GitHub Firmware tab
 
 private struct FirmwareSettingsTab: View {
     @State private var repositories = FirmwareRepositorySettings.repositories
@@ -256,10 +256,18 @@ private struct FirmwareSettingsTab: View {
 
     var body: some View {
         Form {
-            Section("共通GitHub Token") {
-                SecureField("Fine-grained Token", text: $commonToken)
+            Section {
+                Text("GitHub Personal Access Token")
+                    .font(.headline)
+                Text("Required to download Actions artifacts. Create one at ") +
+                    Text("github.com/settings/personal-access-tokens").bold() +
+                    Text(" (Fine-grained token) with **Actions: Read-only** and **Contents: Read-only** permissions for the repositories below.")
+                SecureField("Paste your token here", text: $commonToken)
+                    .textFieldStyle(.roundedBorder)
                     .onChange(of: commonToken) { _, value in FirmwareTokenStore.commonToken = value }
-                Text("個別Tokenが未設定のリポジトリは、このTokenを自動的に使用します。macOSキーチェーンへ保存されます。")
+                Text(commonToken.isEmpty ? "No common token set" : "Common token saved in the macOS Keychain")
+                    .font(.caption).foregroundStyle(commonToken.isEmpty ? .red : .secondary)
+                Text("Used automatically by any repository below that doesn't have its own override token.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("GitHub Repositories") {
@@ -270,28 +278,28 @@ private struct FirmwareSettingsTab: View {
                     }.tag(repository.id)
                 }.frame(minHeight: 120)
                 HStack {
-                    Button("追加") { add() }
-                    Button("削除") { remove() }.disabled(selectedID == nil)
+                    Button("Add") { add() }
+                    Button("Remove") { remove() }.disabled(selectedID == nil)
                 }
             }
             if let index = selectedIndex {
                 Section("Repository Settings") {
-                    TextField("表示名", text: binding(index, \.name))
+                    TextField("Display Name", text: binding(index, \.name))
                     TextField("Repository URL", text: repositoryURLBinding(index))
-                    TextField("Workflow (例: build.yml)", text: binding(index, \.workflow))
-                    TextField("既定ブランチ", text: binding(index, \.defaultBranch))
-                    SecureField("個別Token (空欄なら共通Token)", text: $repositoryToken)
+                    TextField("Workflow (e.g. build.yml)", text: binding(index, \.workflow))
+                    TextField("Default Branch", text: binding(index, \.defaultBranch))
+                    SecureField("Token override (leave blank to use the common token)", text: $repositoryToken)
                         .onChange(of: repositoryToken) { _, value in
                             FirmwareTokenStore.setToken(value, for: repositories[index].id)
                         }
                     HStack {
-                        Text(repositoryToken.isEmpty ? "共通Tokenを使用中" : "個別Tokenで上書き中")
+                        Text(repositoryToken.isEmpty ? "Using common token" : "Overridden with its own token")
                             .foregroundStyle(.secondary)
                         Spacer()
-                        Button("共通Tokenに戻す") { repositoryToken = "" }
+                        Button("Use common token") { repositoryToken = "" }
                             .disabled(repositoryToken.isEmpty)
                     }.font(.caption)
-                    Text("Actions Artifactの取得にはTokenが必要です。対象リポジトリだけを選び、Actions: Read-onlyとContents: Read-onlyを許可します。Firmware Flashから開いた場合は⌘Kで戻れます。")
+                    Text("Grant only Actions: Read-only and Contents: Read-only for this repository. Press ⌘K to return if you opened this from Firmware Flash.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
@@ -336,7 +344,7 @@ private struct FirmwareSettingsTab: View {
     }
 }
 
-// MARK: - 登録ファイルタブ
+// MARK: - Registered Files tab
 
 private struct RegisteredFilesTab: View {
     @State private var firmwares = RegisteredFirmwareSettings.firmwares
@@ -344,7 +352,7 @@ private struct RegisteredFilesTab: View {
 
     var body: some View {
         Form {
-            Section("登録済みファームウェア") {
+            Section("Registered Firmware") {
                 List(firmwares, selection: $selectedID) { firmware in
                     VStack(alignment: .leading, spacing: 2) {
                         Text(firmware.name)
@@ -352,21 +360,21 @@ private struct RegisteredFilesTab: View {
                     }.tag(firmware.id)
                 }.frame(minHeight: 160)
                 HStack {
-                    Button("ファイルを追加…") { addFromPicker() }
-                    Button("削除") { remove() }.disabled(selectedID == nil)
+                    Button("Add File…") { addFromPicker() }
+                    Button("Remove") { remove() }.disabled(selectedID == nil)
                 }
             }
             if let index = selectedIndex {
-                Section("設定") {
-                    TextField("表示名", text: binding(index, \.name))
+                Section("Settings") {
+                    TextField("Display Name", text: binding(index, \.name))
                     HStack {
                         Text(firmwares[index].filePath).font(.caption).foregroundStyle(.secondary)
                         Spacer()
-                        Button("ファイルを変更…") { changeFile(index) }
+                        Button("Change File…") { changeFile(index) }
                     }
                 }
             }
-            Text("登録したUF2ファイルはホットキーで直接呼び出し、UF2ブートローダードライブへ書き込めます。左右分割キーボードは左右それぞれ登録してください。")
+            Text("Registered UF2 files can be flashed directly to a UF2 bootloader drive via hotkey. For split keyboards, register the left and right halves separately.")
                 .font(.caption).foregroundStyle(.secondary)
         }
         .formStyle(.grouped)
