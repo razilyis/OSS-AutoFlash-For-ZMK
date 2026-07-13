@@ -9,8 +9,6 @@ English: [README.md](README.md)
 1. **Registered File Flash(登録ファイルFlash)** — 事前に登録したローカルの`.uf2`ファイルを、ホットキー(初期値 `⌥⌘F`)一発で書き込む
 2. **GitHub Firmware Flash** — 登録したGitHubリポジトリのGitHub Actions Artifactから最新の`.uf2`を自動ダウンロードして書き込む(初期値 `⌥⌘U`)
 
-詳しい仕様は [spec.md](spec.md) を参照してください。
-
 ## 免責事項
 
 本アプリはキーボードのブートローダーへ直接書き込みを行います。**利用は完全に自己責任でお願いします。** 本アプリの使用によって生じた不具合、故障、ハードウェアの起動不能、データ損失などについて、作者は一切の保証を行わず、責任を負いません。詳細は [LICENSE](LICENSE) の"AS IS"条項を参照してください。
@@ -24,16 +22,24 @@ English: [README.md](README.md)
 - macOS 15.0以降
 - Swift 6 ツールチェーン(Xcode 16以降、または Swift 6 toolchain 単体)
 
-## ビルド方法
+## インストール
+
+### リリース版をダウンロードする場合
+
+[Releases](../../releases) ページから `.dmg` をダウンロードして開き、`AutoFlash for ZMK.app` を `Applications` へドラッグしてください。
+
+本アプリはAd-hoc署名(`codesign --sign -`)のみで、Apple公証(notarization)は受けていません。ネットからダウンロードしたファイルにはmacOSが隔離属性(quarantine)を付けるため、通常のダブルクリックでは「開発元が未確認」としてGatekeeperにブロックされます。**初回のみアプリを右クリック(またはControlキーを押しながらクリック)→「開く」**で起動してください。それ以降は通常通りダブルクリックで起動できます。
+
+### ソースからビルドする場合
 
 ```sh
 git clone <このリポジトリのURL>
 cd OSS-AutoFlash-For-ZMK
-./scripts/make_app.sh
+./scripts/macos/make_app.sh
 open "dist/AutoFlash for ZMK.app"
 ```
 
-`swift build` だけでも実行バイナリは作れますが、メニューバーアイコンやログイン項目登録を正しく機能させるには `.app` バンドル化(`make_app.sh`)が必要です。
+`swift build` だけでも実行バイナリは作れますが、メニューバーアイコンやログイン項目登録を正しく機能させるには `.app` バンドル化(`scripts/macos/make_app.sh`)が必要です。配布用に`.dmg`を作る場合は `./scripts/macos/make_dmg.sh` を実行してください。
 
 ## GitHub Firmware Flashの設定
 
@@ -47,6 +53,10 @@ ZMKのファームウェアビルドは、GitHub Actionsのワークフロー実
 4. 「GitHub Repositories」でリポジトリURL・Workflowファイル名(例: `build.yml`)・既定ブランチを登録する
 
 以降は `⌥⌘U` → リポジトリ → ブランチ → UF2 → 書き込み先ボリューム、の順にキーボードだけで選択して書き込めます。書き込み成功後もパネルは閉じないので、左右分割のもう片側を続けて書き込めます。
+
+### Artifactのキャッシュについて
+
+ダウンロード・展開したUF2ファイルは、ワークフロー実行ID(run ID)をキーにシステムの一時ディレクトリへキャッシュされます。対象ブランチの最新の成功runが前回と変わっていなければ、GitHubへ再ダウンロードせずキャッシュを再利用します。ただし保存先は一時ディレクトリのため永続保管ではなく、macOSの再起動や定期クリーンアップで消えることがあります。その場合は自動的に再ダウンロードされます。
 
 ## 登録ファイルFlashの設定
 

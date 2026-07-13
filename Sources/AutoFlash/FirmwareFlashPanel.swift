@@ -137,20 +137,24 @@ struct FirmwareFlashView: View {
     let onSettings: () -> Void
     let onSwitch: () -> Void
     @FocusState private var focused: Bool
+    @AppStorage(Settings.windowOpacityKey) private var windowOpacity: Double = 1.0
+    @AppStorage(Settings.windowThemeKey) private var themeStyle: AutoFlashThemeStyle = .light
+    private var theme: ThemePalette { themeStyle.palette }
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Image(systemName: "memorychip")
-                Text(store.title).font(.title3)
+                ThemeBadge(systemImage: "memorychip", text: store.title, palette: theme)
                 Spacer()
                 if store.isLoading { ProgressView().controlSize(.small) }
                 Button { onSettings() } label: { Image(systemName: "gearshape") }
-                    .buttonStyle(.borderless).help("Open Firmware settings (⌘K)")
+                    .buttonStyle(.borderless).foregroundStyle(theme.textSecondary)
+                    .help("Open Firmware settings (⌘K)")
                 Button { onClose() } label: { Image(systemName: "xmark") }
-                    .buttonStyle(.borderless).help("Close")
+                    .buttonStyle(.borderless).foregroundStyle(theme.textSecondary)
+                    .help("Close")
             }.padding(14)
-            Divider()
+            Divider().overlay(theme.divider)
             List(selection: Binding<Int?>(
                 get: { store.selectedIndex },
                 set: { value in if let value { store.selectedIndex = value } }
@@ -158,32 +162,38 @@ struct FirmwareFlashView: View {
                 ForEach(Array(store.rows.enumerated()), id: \.offset) { index, row in
                     HStack {
                         Image(systemName: row.warning ? "exclamationmark.triangle.fill" : icon)
-                            .foregroundStyle(row.warning ? .orange : .secondary)
+                            .foregroundStyle(row.warning ? theme.orange : theme.purple)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(row.title)
-                            if !row.subtitle.isEmpty { Text(row.subtitle).font(.caption).foregroundStyle(.secondary) }
+                            Text(row.title).foregroundStyle(theme.textPrimary)
+                            if !row.subtitle.isEmpty { Text(row.subtitle).font(.caption).foregroundStyle(theme.textSecondary) }
                         }
-                    }.tag(index).onTapGesture(count: 2) { Task { await select() } }
+                    }
+                    .tag(index)
+                    .listRowBackground(index == store.selectedIndex ? theme.rowSelected : Color.clear)
+                    .onTapGesture(count: 2) { Task { await select() } }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .tint(theme.purple)
             .focusable().focused($focused)
             .onKeyPress(phases: .down, action: handleKey)
             if let error = store.errorMessage {
-                Text(error).font(.caption).foregroundStyle(.red).padding(.horizontal, 14).padding(.vertical, 6)
+                Text(error).font(.caption).foregroundStyle(theme.orange).padding(.horizontal, 14).padding(.vertical, 6)
             }
-            Divider()
+            Divider().overlay(theme.divider)
             HStack {
                 Button("Select (↩)") { Task { await select() } }.keyboardShortcut(.return, modifiers: [])
                 Button("Refresh (⌘R)") { Task { await store.refresh() } }.keyboardShortcut("r")
                 Button("Settings (⌘K)") { onSettings() }.keyboardShortcut("k")
                 Spacer()
-                Text("Tab Registered Files").foregroundStyle(.secondary)
-                Text("Esc Back/Close").foregroundStyle(.secondary)
-                Text(Settings.hotKey(for: .githubFlash).label).foregroundStyle(.secondary)
-            }.font(.caption).padding(10)
+                ThemeHintPill(text: "Tab Registered Files", tint: theme.mint)
+                ThemeHintPill(text: "Esc Back/Close", tint: theme.orange)
+                ThemeHintPill(text: Settings.hotKey(for: .githubFlash).label, tint: theme.purple)
+            }.font(.caption).tint(theme.purple).padding(10)
         }
         .frame(width: 680, height: 440)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .foregroundStyle(theme.textPrimary)
+        .autoFlashPanelBackground(palette: theme, opacity: windowOpacity)
         .onAppear { focused = true }
         .alert("Can't use the latest workflow run", isPresented: $store.showRunWarning) {
             if store.hasSuccessfulFallback {
@@ -222,6 +232,7 @@ struct FirmwareFlashView: View {
 final class FirmwareFlashPanelController {
     private let panel: FirmwareFlashPanel
     private let store = FirmwareFlashStore()
+    private var hasPositioned = false
     var onOpenSettings: (() -> Void)?
     var onSwitchToRegistered: (() -> Void)?
 
@@ -229,6 +240,7 @@ final class FirmwareFlashPanelController {
         panel = FirmwareFlashPanel(contentRect: NSRect(x: 0, y: 0, width: 680, height: 440), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: true)
         panel.isFloatingPanel = true; panel.level = .floating; panel.backgroundColor = .clear
         panel.isOpaque = false; panel.hasShadow = true; panel.hidesOnDeactivate = false
+        panel.isMovableByWindowBackground = true
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.onCancel = { [weak self] in
             guard let self else { return }
@@ -242,9 +254,16 @@ final class FirmwareFlashPanelController {
             onSwitch: { [weak self] in self?.onSwitchToRegistered?() }))
     }
 
-    func show() {
+    var origin: NSPoint { panel.frame.origin }
+
+    func show(at origin: NSPoint? = nil) {
         store.reset(); panel.alphaValue = 1
-        if let screen = NSScreen.main { panel.center(); panel.setFrameOrigin(NSPoint(x: screen.visibleFrame.midX - 340, y: screen.visibleFrame.midY - 180)) }
+        if let origin {
+            panel.setFrameOrigin(origin)
+        } else if !hasPositioned, let screen = NSScreen.main {
+            panel.setFrameOrigin(NSPoint(x: screen.visibleFrame.midX - 340, y: screen.visibleFrame.midY - 180))
+        }
+        hasPositioned = true
         panel.makeKeyAndOrderFront(nil)
     }
     func hide() { panel.orderOut(nil) }

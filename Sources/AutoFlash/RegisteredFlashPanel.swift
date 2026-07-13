@@ -84,19 +84,23 @@ struct RegisteredFlashView: View {
     let onSettings: () -> Void
     let onSwitch: () -> Void
     @FocusState private var focused: Bool
+    @AppStorage(Settings.windowOpacityKey) private var windowOpacity: Double = 1.0
+    @AppStorage(Settings.windowThemeKey) private var themeStyle: AutoFlashThemeStyle = .light
+    private var theme: ThemePalette { themeStyle.palette }
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Image(systemName: "cpu")
-                Text(store.title).font(.title3)
+                ThemeBadge(systemImage: "cpu", text: store.title, palette: theme)
                 Spacer()
                 Button { onSettings() } label: { Image(systemName: "gearshape") }
-                    .buttonStyle(.borderless).help("Open Registered Files settings (⌘K)")
+                    .buttonStyle(.borderless).foregroundStyle(theme.textSecondary)
+                    .help("Open Registered Files settings (⌘K)")
                 Button { onClose() } label: { Image(systemName: "xmark") }
-                    .buttonStyle(.borderless).help("Close")
+                    .buttonStyle(.borderless).foregroundStyle(theme.textSecondary)
+                    .help("Close")
             }.padding(14)
-            Divider()
+            Divider().overlay(theme.divider)
             List(selection: Binding<Int?>(
                 get: { store.selectedIndex },
                 set: { value in if let value { store.selectedIndex = value } }
@@ -104,32 +108,38 @@ struct RegisteredFlashView: View {
                 ForEach(Array(store.rows.enumerated()), id: \.offset) { index, row in
                     HStack {
                         Image(systemName: row.warning ? "exclamationmark.triangle.fill" : icon)
-                            .foregroundStyle(row.warning ? .orange : .secondary)
+                            .foregroundStyle(row.warning ? theme.orange : theme.purple)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(row.title)
-                            if !row.subtitle.isEmpty { Text(row.subtitle).font(.caption).foregroundStyle(.secondary) }
+                            Text(row.title).foregroundStyle(theme.textPrimary)
+                            if !row.subtitle.isEmpty { Text(row.subtitle).font(.caption).foregroundStyle(theme.textSecondary) }
                         }
-                    }.tag(index).onTapGesture(count: 2) { select() }
+                    }
+                    .tag(index)
+                    .listRowBackground(index == store.selectedIndex ? theme.rowSelected : Color.clear)
+                    .onTapGesture(count: 2) { select() }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .tint(theme.purple)
             .focusable().focused($focused)
             .onKeyPress(phases: .down, action: handleKey)
             if let error = store.errorMessage {
-                Text(error).font(.caption).foregroundStyle(.red).padding(.horizontal, 14).padding(.vertical, 6)
+                Text(error).font(.caption).foregroundStyle(theme.orange).padding(.horizontal, 14).padding(.vertical, 6)
             }
-            Divider()
+            Divider().overlay(theme.divider)
             HStack {
                 Button("Select (↩)") { select() }.keyboardShortcut(.return, modifiers: [])
                 Button("Refresh (⌘R)") { store.refresh() }.keyboardShortcut("r")
                 Button("Settings (⌘K)") { onSettings() }.keyboardShortcut("k")
                 Spacer()
-                Text("Tab GitHub Firmware").foregroundStyle(.secondary)
-                Text("Esc Back/Close").foregroundStyle(.secondary)
-                Text(Settings.hotKey(for: .registeredFlash).label).foregroundStyle(.secondary)
-            }.font(.caption).padding(10)
+                ThemeHintPill(text: "Tab GitHub Firmware", tint: theme.mint)
+                ThemeHintPill(text: "Esc Back/Close", tint: theme.orange)
+                ThemeHintPill(text: Settings.hotKey(for: .registeredFlash).label, tint: theme.purple)
+            }.font(.caption).tint(theme.purple).padding(10)
         }
         .frame(width: 680, height: 440)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .foregroundStyle(theme.textPrimary)
+        .autoFlashPanelBackground(palette: theme, opacity: windowOpacity)
         .onAppear { focused = true }
     }
 
@@ -159,6 +169,7 @@ struct RegisteredFlashView: View {
 final class RegisteredFlashPanelController {
     private let panel: RegisteredFlashPanel
     private let store = RegisteredFlashStore()
+    private var hasPositioned = false
     var onOpenSettings: (() -> Void)?
     var onSwitchToGithub: (() -> Void)?
 
@@ -166,6 +177,7 @@ final class RegisteredFlashPanelController {
         panel = RegisteredFlashPanel(contentRect: NSRect(x: 0, y: 0, width: 680, height: 440), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: true)
         panel.isFloatingPanel = true; panel.level = .floating; panel.backgroundColor = .clear
         panel.isOpaque = false; panel.hasShadow = true; panel.hidesOnDeactivate = false
+        panel.isMovableByWindowBackground = true
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.onCancel = { [weak self] in
             guard let self else { return }
@@ -179,9 +191,16 @@ final class RegisteredFlashPanelController {
             onSwitch: { [weak self] in self?.onSwitchToGithub?() }))
     }
 
-    func show() {
+    var origin: NSPoint { panel.frame.origin }
+
+    func show(at origin: NSPoint? = nil) {
         store.reset(); panel.alphaValue = 1
-        if let screen = NSScreen.main { panel.center(); panel.setFrameOrigin(NSPoint(x: screen.visibleFrame.midX - 340, y: screen.visibleFrame.midY - 180)) }
+        if let origin {
+            panel.setFrameOrigin(origin)
+        } else if !hasPositioned, let screen = NSScreen.main {
+            panel.setFrameOrigin(NSPoint(x: screen.visibleFrame.midX - 340, y: screen.visibleFrame.midY - 180))
+        }
+        hasPositioned = true
         panel.makeKeyAndOrderFront(nil)
     }
     func hide() { panel.orderOut(nil) }

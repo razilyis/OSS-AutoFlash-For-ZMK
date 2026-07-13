@@ -23,4 +23,4 @@ cp "$WORK_DIR/icon_512.png" "$ICONSET/icon_512x512.png"
 cp "$WORK_DIR/icon_1024.png" "$ICONSET/icon_512x512@2x.png"
 
 iconutil -c icns "$ICONSET" -o AppIcon.icns
-echo "Built: scripts/AppIcon.icns"
+echo "Built: scripts/macos/AppIcon.icns"

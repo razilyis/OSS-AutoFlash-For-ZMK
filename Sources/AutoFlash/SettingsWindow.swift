@@ -90,6 +90,8 @@ private struct SettingsView: View {
 private struct GeneralTab: View {
     @State private var loginItemEnabled = LoginItem.isEnabled
     @State private var errorMessage: String?
+    @AppStorage(Settings.windowOpacityKey) private var windowOpacity: Double = 1.0
+    @AppStorage(Settings.windowThemeKey) private var themeStyle: AutoFlashThemeStyle = .light
 
     var body: some View {
         Form {
@@ -108,6 +110,29 @@ private struct GeneralTab: View {
                     Text(errorMessage).font(.caption).foregroundStyle(.red)
                 }
                 Text("Only works when launched from a built .app (fails when run via `swift run`).")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Section("Appearance") {
+                Picker("Color Theme", selection: $themeStyle) {
+                    ForEach(AutoFlashThemeStyle.allCases) { style in
+                        Text(style.title).tag(style)
+                    }
+                }
+                .pickerStyle(.segmented)
+                HStack {
+                    Text("Window Transparency")
+                    Slider(value: $windowOpacity, in: Settings.windowOpacityRange)
+                    Text("\(Int(windowOpacity * 100))%").monospacedDigit().foregroundStyle(.secondary).frame(width: 44, alignment: .trailing)
+                }
+                HStack(spacing: 8) {
+                    ThemeBadge(systemImage: "memorychip", text: "Sample", palette: themeStyle.palette)
+                    ThemeHintPill(text: "Esc Back/Close", tint: themeStyle.palette.orange)
+                    ThemeHintPill(text: "⌥⌘U", tint: themeStyle.palette.purple)
+                }
+                .padding(20)
+                .frame(maxWidth: .infinity)
+                .autoFlashPanelBackground(palette: themeStyle.palette, opacity: windowOpacity)
+                Text("Applies to the flash panels opened by ⌥⌘U / ⌥⌘F.")
                     .font(.caption).foregroundStyle(.secondary)
             }
         }
@@ -253,6 +278,7 @@ private struct FirmwareSettingsTab: View {
     @State private var selectedID: UUID?
     @State private var commonToken = FirmwareTokenStore.commonToken
     @State private var repositoryToken = ""
+    @State private var showingRepoPicker = false
 
     var body: some View {
         Form {
@@ -282,6 +308,9 @@ private struct FirmwareSettingsTab: View {
                 }.frame(minHeight: 120)
                 HStack {
                     Button("Add") { add() }
+                    Button("Fetch from GitHub…") { showingRepoPicker = true }
+                        .disabled(commonToken.isEmpty)
+                        .help(commonToken.isEmpty ? "Set a GitHub token above first" : "List repositories your token can access")
                     Button("Remove") { remove() }.disabled(selectedID == nil)
                 }
             }
@@ -311,6 +340,13 @@ private struct FirmwareSettingsTab: View {
         .onAppear { repositories = FirmwareRepositorySettings.repositories; selectedID = repositories.first?.id }
         .onChange(of: selectedID) { _, id in
             repositoryToken = id.map(FirmwareTokenStore.token(for:)) ?? ""
+        }
+        .sheet(isPresented: $showingRepoPicker) {
+            RepoPickerSheet(token: commonToken, repositories: $repositories) { newRepository in
+                repositories.append(newRepository)
+                FirmwareRepositorySettings.repositories = repositories
+                selectedID = newRepository.id
+            }
         }
     }
 
@@ -344,6 +380,89 @@ private struct FirmwareSettingsTab: View {
         FirmwareTokenStore.removeToken(for: selectedID)
         repositories.removeAll { $0.id == selectedID }; FirmwareRepositorySettings.repositories = repositories
         self.selectedID = repositories.first?.id
+    }
+}
+
+private struct RepoPickerSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let token: String
+    @Binding var repositories: [FirmwareRepository]
+    let onSelect: (FirmwareRepository) -> Void
+
+    @State private var results: [GitHubFirmwareAPI.RepositorySummary] = []
+    @State private var loading = true
+    @State private var errorMessage: String?
+    @State private var search = ""
+
+    private var filtered: [GitHubFirmwareAPI.RepositorySummary] {
+        search.isEmpty ? results : results.filter { $0.full_name.localizedCaseInsensitiveContains(search) }
+    }
+
+    // 既に登録済みのリポジトリを判定するため owner/repo で正規化して比較する
+    private var addedFullNames: Set<String> {
+        Set(repositories.compactMap { $0.ownerAndRepository.map { "\($0.0)/\($0.1)".lowercased() } })
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Fetch Repositories from GitHub").font(.headline)
+                Spacer()
+                Button("Close") { dismiss() }
+            }
+            TextField("Search", text: $search)
+                .textFieldStyle(.roundedBorder)
+            Group {
+                if loading {
+                    ProgressView("Loading repositories…")
+                } else if let errorMessage {
+                    Text(errorMessage).foregroundStyle(.red)
+                } else if filtered.isEmpty {
+                    Text("No repositories found.").foregroundStyle(.secondary)
+                } else {
+                    List(filtered) { repo in
+                        let added = addedFullNames.contains(repo.full_name.lowercased())
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(repo.full_name)
+                                Text("Default branch: \(repo.default_branch)")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            if added {
+                                Label("Added", systemImage: "checkmark.circle.fill")
+                                    .font(.caption).foregroundStyle(.green)
+                            } else {
+                                Button("Add") { add(repo) }
+                            }
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .padding()
+        .frame(width: 440, height: 420)
+        .task { await load() }
+    }
+
+    private func add(_ repo: GitHubFirmwareAPI.RepositorySummary) {
+        var repository = FirmwareRepository()
+        repository.name = repo.full_name.split(separator: "/").last.map(String.init) ?? repo.full_name
+        repository.repositoryURL = repo.html_url.absoluteString
+        repository.defaultBranch = repo.default_branch
+        onSelect(repository)
+    }
+
+    private func load() async {
+        loading = true
+        errorMessage = nil
+        do {
+            results = try await GitHubFirmwareAPI.userRepositories(token: token)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        loading = false
     }
 }
 

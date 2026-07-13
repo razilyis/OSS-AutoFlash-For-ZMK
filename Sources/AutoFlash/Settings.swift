@@ -33,6 +33,13 @@ enum HotKeyAction: String, CaseIterable {
 enum Settings {
     private static var defaults: UserDefaults { .standard }
 
+    // フラッシュパネル(⌥⌘U / ⌥⌘F で開くHUD風ウィンドウ)の背景不透明度。
+    static let windowOpacityKey = "window.backgroundOpacity"
+    static let windowOpacityRange: ClosedRange<Double> = 0.4...1.0
+
+    // フラッシュパネルの配色テーマ。
+    static let windowThemeKey = "window.theme"
+
     // ホットキー割り当て。未設定ならデフォルトを返す。
     static func hotKey(for action: HotKeyAction) -> KeyCombo {
         guard let dict = defaults.dictionary(forKey: action.rawValue),

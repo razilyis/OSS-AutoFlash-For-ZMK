@@ -101,6 +101,14 @@ enum FirmwareTokenStore {
     }
 }
 
+extension URLComponents {
+    fileprivate func withQueryItems(_ items: [URLQueryItem]) -> URLComponents {
+        var copy = self
+        copy.queryItems = items
+        return copy
+    }
+}
+
 nonisolated enum GitHubFirmwareAPI {
     struct DownloadedFirmware: Codable, Sendable {
         let url: URL
@@ -123,10 +131,43 @@ nonisolated enum GitHubFirmwareAPI {
         let expired: Bool
         let archive_download_url: URL
     }
+    struct RepositorySummary: Decodable, Identifiable, Hashable {
+        let full_name: String
+        let html_url: URL
+        let default_branch: String
+        var id: String { full_name }
+    }
     private struct CacheManifest: Codable {
         let runID: Int64
         let commit: String
         let files: [DownloadedFirmware]
+    }
+
+    static func userRepositories(token: String) async throws -> [RepositorySummary] {
+        var results: [RepositorySummary] = []
+        var url: URL? = URLComponents(string: "https://api.github.com/user/repos")!
+            .withQueryItems([
+                URLQueryItem(name: "per_page", value: "100"),
+                URLQueryItem(name: "sort", value: "full_name"),
+            ]).url
+        while let current = url {
+            let (data, response) = try await requestWithResponse(current, token: token)
+            results.append(contentsOf: try JSONDecoder().decode([RepositorySummary].self, from: data))
+            url = nextPageURL(from: response)
+        }
+        return results
+    }
+
+    private static func nextPageURL(from response: HTTPURLResponse) -> URL? {
+        guard let link = response.value(forHTTPHeaderField: "Link") else { return nil }
+        for part in link.components(separatedBy: ",") {
+            let segments = part.components(separatedBy: ";").map { $0.trimmingCharacters(in: .whitespaces) }
+            guard segments.count >= 2, segments[1] == "rel=\"next\"",
+                segments[0].hasPrefix("<"), segments[0].hasSuffix(">")
+            else { continue }
+            return URL(string: String(segments[0].dropFirst().dropLast()))
+        }
+        return nil
     }
 
     static func branches(for repository: FirmwareRepository, token: String) async throws -> [String] {
@@ -223,6 +264,12 @@ nonisolated enum GitHubFirmwareAPI {
     }
 
     private static func request(_ url: URL, token: String, accept: String = "application/vnd.github+json") async throws -> Data {
+        try await requestWithResponse(url, token: token, accept: accept).0
+    }
+
+    private static func requestWithResponse(
+        _ url: URL, token: String, accept: String = "application/vnd.github+json"
+    ) async throws -> (Data, HTTPURLResponse) {
         var request = URLRequest(url: url)
         request.setValue(accept, forHTTPHeaderField: "Accept")
         request.setValue("2026-03-10", forHTTPHeaderField: "X-GitHub-Api-Version")
@@ -245,7 +292,7 @@ nonisolated enum GitHubFirmwareAPI {
             }
             throw FirmwareAPIError.message("GitHub API error (HTTP \(code)).")
         }
-        return data
+        return (data, http)
     }
 }
 

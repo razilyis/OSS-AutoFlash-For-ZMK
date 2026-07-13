@@ -21,12 +21,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.settingsWindow.show(tab: .registeredFiles) { self?.registeredFlash.show() }
         }
         githubFlash.onSwitchToRegistered = { [weak self] in
-            self?.githubFlash.hide()
-            self?.registeredFlash.show()
+            guard let self else { return }
+            let origin = githubFlash.origin
+            githubFlash.hide()
+            registeredFlash.show(at: origin)
         }
         registeredFlash.onSwitchToGithub = { [weak self] in
-            self?.registeredFlash.hide()
-            self?.githubFlash.show()
+            guard let self else { return }
+            let origin = registeredFlash.origin
+            registeredFlash.hide()
+            githubFlash.show(at: origin)
         }
 
         setupMainMenu()
