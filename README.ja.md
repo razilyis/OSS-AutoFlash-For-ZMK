@@ -24,17 +24,19 @@ English: [README.md](README.md)
 ## 動作環境
 
 - macOS 15.0以降
-- Swift 6 ツールチェーン(Xcode 16以降、または Swift 6 toolchain 単体)
+- ソースからビルドする場合のみ: Swift 6 ツールチェーン(Xcode 16以降、または Swift 6 toolchain 単体)。リリース版をダウンロードするだけなら不要です。
 
 ## インストール
 
 ### リリース版をダウンロードする場合
 
-[Releases](../../releases) ページから `.dmg` をダウンロードして開き、`AutoFlash for ZMK.app` を `Applications` へドラッグしてください。
+[Releases](../../releases) ページから `.dmg` をダウンロードして開き、`AutoFlash for ZMK.app` を `Applications` へドラッグしてください。ツールチェーンのセットアップは不要で、macOS 15.0以降だけで動作します。
 
-本アプリはAd-hoc署名(`codesign --sign -`)のみで、Apple公証(notarization)は受けていません。ネットからダウンロードしたファイルにはmacOSが隔離属性(quarantine)を付けるため、通常のダブルクリックでは「開発元が未確認」としてGatekeeperにブロックされます。**初回のみアプリを右クリック(またはControlキーを押しながらクリック)→「開く」**で起動してください。それ以降は通常通りダブルクリックで起動できます。
+本アプリはローカルの自己署名証明書で署名されており、Apple公証(notarization)は受けていません。ネットからダウンロードしたファイルにはmacOSが隔離属性(quarantine)を付けるため、通常のダブルクリックでは「開発元が未確認」としてGatekeeperにブロックされます。**初回のみアプリを右クリック(またはControlキーを押しながらクリック)→「開く」**で起動してください。それ以降は通常通りダブルクリックで起動できます。
 
 ### ソースからビルドする場合
+
+Swift 6 ツールチェーンが必要です(上記の動作環境を参照)。
 
 ```sh
 git clone <このリポジトリのURL>
@@ -44,6 +46,8 @@ open "dist/AutoFlash for ZMK.app"
 ```
 
 `swift build` だけでも実行バイナリは作れますが、メニューバーアイコンやログイン項目登録を正しく機能させるには `.app` バンドル化(`scripts/macos/make_app.sh`)が必要です。配布用に`.dmg`を作る場合は `./scripts/macos/make_dmg.sh` を実行してください。
+
+`make_app.sh` はデフォルトで `AutoFlash for ZMK Dev` という名前のローカル証明書で署名します。この証明書は事前にKeychain Access(キーチェーンアクセス)→ 証明書アシスタント → 証明書を作成 → 種類「コード署名」で作成しておく必要があります。固定の証明書を使うことで、再ビルドしてもアプリの識別子が変わらず、Keychainのアクセス許可(GitHubトークンの読み取りなど)が毎回リセットされるのを防げます。証明書を作りたくない場合は `CODESIGN_IDENTITY=- ./scripts/macos/make_app.sh` でAd-hoc署名にできます(その場合、再ビルドのたびにKeychainの確認ダイアログが再び出るようになります)。別名の証明書を使う場合は `CODESIGN_IDENTITY=<証明書名>` を指定してください。
 
 ## GitHub Firmware Flashの設定
 
