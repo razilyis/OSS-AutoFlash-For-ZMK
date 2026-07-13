@@ -15,7 +15,9 @@ English: [README.md](README.md)
 
 ## スクリーンショット
 
-(準備中)
+| リポジトリ選択 | ブランチ選択 |
+| --- | --- |
+| ![リポジトリ選択](docs/screenshots/repository-select.png) | ![ブランチ選択](docs/screenshots/branch-select.png) |
 
 ## 動作環境
 

@@ -15,7 +15,9 @@ This app writes directly to your keyboard's bootloader. **Use it entirely at you
 
 ## Screenshots
 
-(coming soon)
+| Repository | Branch |
+| --- | --- |
+| ![Select a repository](docs/screenshots/repository-select.png) | ![Select a branch](docs/screenshots/branch-select.png) |
 
 ## Requirements
 
