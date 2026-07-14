@@ -6,3 +6,7 @@ DerivedData/
 dist/
 spec.md
 .vscode/
+
+# Windows (.NET)
+windows/**/bin/
+windows/**/obj/

@@ -1,0 +1,19 @@
+<UserControl x:Class="AutoFlash.Views.HotKeyRecorderControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel Margin="0,4">
+        <DockPanel>
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                <Button x:Name="ComboButton" MinWidth="140" Padding="10,4"
+                        Click="OnComboClick"
+                        PreviewKeyDown="OnComboKeyDown"
+                        LostKeyboardFocus="OnComboLostFocus"/>
+                <Button x:Name="ResetButton" Content="Reset" Padding="10,4" Margin="8,0,0,0"
+                        Click="OnResetClick"/>
+            </StackPanel>
+            <TextBlock x:Name="TitleText" VerticalAlignment="Center"/>
+        </DockPanel>
+        <TextBlock x:Name="ErrorText" Foreground="#C0392B" FontSize="11" Margin="0,4,0,0"
+                   TextWrapping="Wrap" Visibility="Collapsed"/>
+    </StackPanel>
+</UserControl>

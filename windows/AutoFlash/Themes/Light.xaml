@@ -1,0 +1,31 @@
+<!-- Theme.swift の ThemePalette.light を WPF リソース化したもの。全参照は DynamicResource で行う。 -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+    <Color x:Key="Theme.BackgroundColor">#F5F7FF</Color>
+    <Color x:Key="Theme.BackgroundBottomColor">#E6EBF7</Color>
+
+    <SolidColorBrush x:Key="Theme.Mint" Color="#4DBF9E"/>
+    <SolidColorBrush x:Key="Theme.Purple" Color="#705CDB"/>
+    <SolidColorBrush x:Key="Theme.Orange" Color="#CC781A"/>
+    <SolidColorBrush x:Key="Theme.TextPrimary" Color="#1F212B"/>
+    <SolidColorBrush x:Key="Theme.TextSecondary" Color="#667085"/>
+    <SolidColorBrush x:Key="Theme.Divider" Color="#D1D6E3"/>
+    <SolidColorBrush x:Key="Theme.RowSelected" Color="#24705CDB"/>
+    <SolidColorBrush x:Key="Theme.BadgeText" Color="#F2FFFFFF"/>
+    <SolidColorBrush x:Key="Theme.BorderOverlay" Color="#0F000000"/>
+    <SolidColorBrush x:Key="Theme.MintDim" Color="#294DBF9E"/>
+    <SolidColorBrush x:Key="Theme.PurpleDim" Color="#29705CDB"/>
+    <SolidColorBrush x:Key="Theme.OrangeDim" Color="#29CC781A"/>
+    <SolidColorBrush x:Key="Theme.MintBorder" Color="#594DBF9E"/>
+    <SolidColorBrush x:Key="Theme.PurpleBorder" Color="#59705CDB"/>
+    <SolidColorBrush x:Key="Theme.OrangeBorder" Color="#59CC781A"/>
+
+    <LinearGradientBrush x:Key="Theme.PanelBackground" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#F5F7FF" Offset="0"/>
+        <GradientStop Color="#E6EBF7" Offset="1"/>
+    </LinearGradientBrush>
+
+    <sys:Double x:Key="Theme.MaterialOpacity">0.7</sys:Double>
+</ResourceDictionary>

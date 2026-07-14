@@ -1,0 +1,138 @@
+<Window x:Class="AutoFlash.Views.FlashPanelWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
+        Width="680" Height="440"
+        PreviewKeyDown="OnPreviewKeyDown"
+        MouseLeftButtonDown="OnBackgroundMouseDown">
+    <Grid>
+        <Grid.Clip>
+            <RectangleGeometry Rect="0,0,680,440" RadiusX="20" RadiusY="20"/>
+        </Grid.Clip>
+
+        <!-- 背景(不透明度は設定値。コンテンツには適用しない) -->
+        <Border Background="{DynamicResource Theme.PanelBackground}" Opacity="{Binding PanelOpacity}"/>
+
+        <DockPanel>
+            <!-- ヘッダー -->
+            <DockPanel DockPanel.Dock="Top" Margin="14">
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
+                    <ProgressBar Width="56" Height="4" IsIndeterminate="True" Margin="0,0,12,0"
+                                 BorderThickness="0" Background="Transparent"
+                                 Foreground="{DynamicResource Theme.Purple}"
+                                 Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}"/>
+                    <Button Style="{StaticResource IconButton}" Content="&#xE713;"
+                            ToolTip="Open settings (Ctrl+K)" Click="OnSettingsClick"/>
+                    <Button Style="{StaticResource IconButton}" Content="&#xE711;"
+                            ToolTip="Close" Click="OnCloseClick"/>
+                </StackPanel>
+                <Border Background="{DynamicResource Theme.Mint}" CornerRadius="14" Padding="12,6"
+                        HorizontalAlignment="Left">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Glyph}" Text="{Binding BadgeGlyph}" FontSize="13"
+                                   Foreground="{DynamicResource Theme.BadgeText}" Margin="0,0,6,0"/>
+                        <TextBlock Text="{Binding Title}" FontFamily="{StaticResource MonoFont}"
+                                   FontSize="13" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Theme.BadgeText}"/>
+                    </StackPanel>
+                </Border>
+            </DockPanel>
+            <Rectangle DockPanel.Dock="Top" Height="1" Fill="{DynamicResource Theme.Divider}"/>
+
+            <!-- フッター -->
+            <Border DockPanel.Dock="Bottom" Padding="10">
+                <DockPanel>
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                        <Button Content="Select (Enter)" Style="{StaticResource FooterButton}" Click="OnSelectClick"/>
+                        <Button Content="Refresh (Ctrl+R)" Style="{StaticResource FooterButton}" Click="OnRefreshClick"/>
+                        <Button Content="Settings (Ctrl+K)" Style="{StaticResource FooterButton}" Click="OnSettingsClick"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Border Background="{DynamicResource Theme.MintDim}" CornerRadius="10" Padding="8,3" Margin="0,0,6,0"
+                                BorderThickness="1" BorderBrush="{DynamicResource Theme.MintBorder}">
+                            <TextBlock Text="{Binding SwitchHint}" FontFamily="{StaticResource MonoFont}" FontSize="11"
+                                       Foreground="{DynamicResource Theme.Mint}"/>
+                        </Border>
+                        <Border Background="{DynamicResource Theme.OrangeDim}" CornerRadius="10" Padding="8,3" Margin="0,0,6,0"
+                                BorderThickness="1" BorderBrush="{DynamicResource Theme.OrangeBorder}">
+                            <TextBlock Text="Esc Back/Close" FontFamily="{StaticResource MonoFont}" FontSize="11"
+                                       Foreground="{DynamicResource Theme.Orange}"/>
+                        </Border>
+                        <Border Background="{DynamicResource Theme.PurpleDim}" CornerRadius="10" Padding="8,3"
+                                BorderThickness="1" BorderBrush="{DynamicResource Theme.PurpleBorder}">
+                            <TextBlock Text="{Binding HotKeyLabel}" FontFamily="{StaticResource MonoFont}" FontSize="11"
+                                       Foreground="{DynamicResource Theme.Purple}"/>
+                        </Border>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+            <Rectangle DockPanel.Dock="Bottom" Height="1" Fill="{DynamicResource Theme.Divider}"/>
+            <TextBlock DockPanel.Dock="Bottom" Text="{Binding ErrorMessage}" FontSize="11"
+                       Margin="14,6" TextWrapping="Wrap"
+                       Foreground="{DynamicResource Theme.Orange}"
+                       Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}"/>
+
+            <!-- リスト -->
+            <ListBox x:Name="RowList" ItemsSource="{Binding Rows}"
+                     SelectedIndex="{Binding SelectedIndex, Mode=TwoWay}"
+                     Background="Transparent" BorderThickness="0" Margin="6,6"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     KeyboardNavigation.DirectionalNavigation="None"
+                     KeyboardNavigation.TabNavigation="None"
+                     Focusable="False"
+                     MouseLeftButtonUp="OnRowClick">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Focusable" Value="False"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+                                    <Border x:Name="Bg" CornerRadius="8" Background="Transparent"
+                                            Padding="8,6" Margin="8,1">
+                                        <ContentPresenter/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="Bg" Property="Background"
+                                                    Value="{DynamicResource Theme.RowSelected}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="RowIcon" Style="{StaticResource Glyph}" FontSize="15" Margin="4,0,12,0"
+                                       Text="{Binding DataContext.StageGlyph, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                       Foreground="{DynamicResource Theme.Purple}"/>
+                            <StackPanel>
+                                <TextBlock Text="{Binding Title}" FontSize="13"
+                                           Foreground="{DynamicResource Theme.TextPrimary}"/>
+                                <TextBlock x:Name="RowSubtitle" Text="{Binding Subtitle}" FontSize="11" Margin="0,2,0,0"
+                                           Foreground="{DynamicResource Theme.TextSecondary}"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding Warning}" Value="True">
+                                <Setter TargetName="RowIcon" Property="Text" Value="&#xE7BA;"/>
+                                <Setter TargetName="RowIcon" Property="Foreground"
+                                        Value="{DynamicResource Theme.Orange}"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Subtitle}" Value="">
+                                <Setter TargetName="RowSubtitle" Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
+
+        <!-- 枠線オーバーレイ -->
+        <Border BorderBrush="{DynamicResource Theme.BorderOverlay}" BorderThickness="1"
+                CornerRadius="20" IsHitTestVisible="False"/>
+    </Grid>
+</Window>

@@ -1,15 +1,26 @@
 # AutoFlash for ZMK
 
-A lightweight macOS menu bar utility for flashing firmware to split keyboards running ZMK (UF2 bootloader devices).
+A lightweight utility for flashing firmware to split keyboards running ZMK (UF2 bootloader devices) — a menu bar app on macOS, a system tray app on Windows.
 
-The core idea: flash firmware without ever touching the mouse. Press a hotkey, arrow through the list, hit Return — done. No Finder, no drag-and-drop, no clicking through a GUI.
+The core idea: flash firmware without ever touching the mouse. Press a hotkey, arrow through the list, hit Return — done. No file manager, no drag-and-drop, no clicking through a GUI.
 
 日本語版: [README.ja.md](README.ja.md)
 
 The feature set is intentionally kept to just two things:
 
-1. **Registered File Flash** — flash a `.uf2` file you've registered locally, with one hotkey (default `⌥⌘F`)
-2. **GitHub Firmware Flash** — automatically download the latest `.uf2` from a GitHub Actions artifact in a repository you've registered, then flash it (default `⌥⌘U`)
+1. **Registered File Flash** — flash a `.uf2` file you've registered locally, with one hotkey
+2. **GitHub Firmware Flash** — automatically download the latest `.uf2` from a GitHub Actions artifact in a repository you've registered, then flash it
+
+Default keys (all changeable in Settings → Hotkeys):
+
+| Action | macOS | Windows |
+| --- | --- | --- |
+| GitHub Firmware Flash | `⌥⌘U` | `Ctrl+Alt+U` |
+| Registered File Flash | `⌥⌘F` | `Ctrl+Alt+R` |
+| Refresh (in the panel) | `⌘R` | `Ctrl+R` |
+| Open settings (in the panel) | `⌘K` | `Ctrl+K` |
+| Back / Close | `Esc` | `Esc` |
+| Switch between the two panels | `Tab` | `Tab` |
 
 ## Disclaimer
 
@@ -23,18 +34,31 @@ This app writes directly to your keyboard's bootloader. **Use it entirely at you
 
 ## Requirements
 
+### macOS
+
 - macOS 15.0 or later
 - To build from source only: Swift 6 toolchain (Xcode 16+, or a standalone Swift 6 toolchain). Not needed if you just download a release.
 
+### Windows
+
+- Windows 10 21H2 or later (Windows 11 recommended for the nicest icon glyphs)
+- To build from source only: .NET 8 SDK or later. Not needed if you just download a release — the published exe is self-contained.
+
 ## Install
 
-### Download a release
+### macOS — download a release
 
 Download the `.dmg` from the [Releases](../../releases) page, open it, and drag `AutoFlash for ZMK.app` into `Applications`. No toolchain required — just macOS 15.0+.
 
 The app is signed with a local self-signed certificate, not notarized by Apple. Since macOS flags anything downloaded from the internet with a quarantine attribute, a plain double-click will be blocked by Gatekeeper as "from an unidentified developer." **Right-click (or Control-click) the app → Open** the first time to bypass this; after that it launches normally.
 
-### Build from source
+### Windows — download a release
+
+Download `AutoFlashForZMK-win-x64-<version>.zip` from the [Releases](../../releases) page, extract it anywhere you like, and run `AutoFlash.exe`. The app appears in the system tray (notification area).
+
+The exe is not code-signed, so Microsoft Defender SmartScreen may warn about an unknown publisher on first launch. Click **More info → Run anyway** the first time; after that it launches normally. If you enable "Launch at login" in Settings, note that it records the exe's current path — re-enable it after moving the exe.
+
+### macOS — build from source
 
 Requires the Swift 6 toolchain (see Requirements above).
 
@@ -49,11 +73,24 @@ open "dist/AutoFlash for ZMK.app"
 
 `make_app.sh` signs the build with a local certificate named `AutoFlash for ZMK Dev` by default. This needs to exist in your keychain first — create it once via Keychain Access → Certificate Assistant → Create a Certificate → type: Code Signing Certificate. A stable local certificate keeps the app's identity consistent across rebuilds, so macOS Keychain access prompts (e.g. for the GitHub token) aren't reset on every build. If you don't want to create one, use ad-hoc signing instead: `CODESIGN_IDENTITY=- ./scripts/macos/make_app.sh` (accept that Keychain prompts will then reappear on every rebuild), or pass a different certificate name with `CODESIGN_IDENTITY=<name>`.
 
+### Windows — build from source
+
+Requires the .NET 8 SDK or later.
+
+```powershell
+git clone <this repository's URL>
+cd OSS-AutoFlash-For-ZMK
+./scripts/windows/publish.ps1
+# → dist/windows/AutoFlash.exe and dist/AutoFlashForZMK-win-x64-<version>.zip
+```
+
+For development, `dotnet run --project windows/AutoFlash` works too. The Windows app lives in [windows/](windows/) as a WPF project sharing the same behavior as the macOS app.
+
 ## Setting up GitHub Firmware Flash
 
 ZMK firmware builds are commonly produced as a GitHub Actions artifact on every workflow run (this app does not rely on tagged GitHub Releases).
 
-1. Open the menu bar icon → Settings → **GitHub Firmware** tab
+1. Open the menu bar / tray icon → Settings → **GitHub Firmware** tab
 2. Create a fine-grained personal access token:
    1. Go to [github.com/settings/personal-access-tokens](https://github.com/settings/personal-access-tokens) (GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens) and click **Generate new token**
    2. **Token name**: anything memorable, e.g. `AutoFlash for ZMK`
@@ -63,14 +100,14 @@ ZMK firmware builds are commonly produced as a GitHub Actions artifact on every 
    6. **Permissions → Repository permissions**: set **Actions** to **Read-only** and **Contents** to **Read-only**. Leave everything else at **No access**
    7. Click **Generate token**, then **copy it immediately** — GitHub only shows the full token (`github_pat_…`) once
    8. If the repository belongs to an organization with fine-grained token restrictions, an org admin may need to approve the token before it starts working
-3. Paste the token into the "GitHub Personal Access Token" field in AutoFlash (a per-repository override token can also be set if you need different tokens for different repositories)
+3. Paste the token into the "GitHub Personal Access Token" field in AutoFlash (a per-repository override token can also be set if you need different tokens for different repositories). The token is stored in the macOS Keychain / Windows Credential Manager
 4. Under "GitHub Repositories", either click **Fetch from GitHub…** to pick from the repositories your token can access (already-added ones are marked), or register the repository URL, workflow filename (e.g. `build.yml`), and default branch manually
 
-From then on, `⌥⌘U` walks you through repository → branch → UF2 → destination volume, entirely from the keyboard. After a successful flash the panel stays open so you can immediately flash the next half of a split keyboard.
+From then on, the hotkey (`⌥⌘U` / `Ctrl+Alt+U`) walks you through repository → branch → UF2 → destination volume, entirely from the keyboard. After a successful flash the panel stays open so you can immediately flash the next half of a split keyboard.
 
 ### Artifact caching
 
-Downloaded and extracted UF2 files are cached in the system's temporary directory, keyed by the workflow run ID. If the latest successful run for the selected branch hasn't changed since last time, the cached files are reused instead of re-downloading from GitHub. Since this is a temporary directory (not permanent storage), macOS may clear it on reboot or during routine cleanup — a fresh download will happen automatically when that's the case.
+Downloaded and extracted UF2 files are cached in the system's temporary directory (`%TEMP%\AutoFlashForZMK\` on Windows), keyed by the workflow run ID. If the latest successful run for the selected branch hasn't changed since last time, the cached files are reused instead of re-downloading from GitHub. Since this is a temporary directory (not permanent storage), the OS may clear it on reboot or during routine cleanup — a fresh download will happen automatically when that's the case.
 
 ## Setting up Registered File Flash
 
@@ -78,7 +115,7 @@ Downloaded and extracted UF2 files are cached in the system's temporary director
 2. Click "Add File…" and pick a local `.uf2` file, then give it a name
 3. For split keyboards, register the left and right halves as separate entries
 
-From then on, `⌥⌘F` walks you through the registered file → destination volume. Flashing is also continuous here — the panel returns to the file list after each successful write.
+From then on, the hotkey (`⌥⌘F` / `Ctrl+Alt+R`) walks you through the registered file → destination volume. Flashing is also continuous here — the panel returns to the file list after each successful write.
 
 ## About UF2 bootloaders
 
